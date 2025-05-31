@@ -34,7 +34,7 @@ jobs:
         run: hugo
 
       - name: Create CNAME
-        run: echo "www.renewszero.com" > CNAME
+        run: echo "www.renewszero.com" > public/CNAME
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
