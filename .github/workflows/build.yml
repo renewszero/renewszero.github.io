@@ -1,7 +1,11 @@
 name: GitHub Pages
 
-on: workflow_dispatch
+on: 
+  workflow_dispatch:
+  push:
+    branches: [ main ]  # Add automatic trigger on push to main
 
+# Add proper permissions
 permissions:
   contents: read
   pages: write
@@ -11,18 +15,35 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps: 
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4  # Updated to v4
         with:
           submodules: true
           fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       
-      - uses: actions/checkout@v3
+      - name: Checkout notion-md tool
+        uses: actions/checkout@v4  # Updated to v4
         with:
           repository: Malsius/notion-md
           path: notion-md
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+      
+      - name: Install Python dependencies
+        run: |
+          cd notion-md
+          pip install -r requirements.txt || echo "No requirements.txt found"
+      
+      - name: Make script executable
+        run: chmod +x notion-md/script.py
       
       - name: Fetch Notion pages
-        run: notion-md/script.py --static static/images --content content/posts --url /notion-ghpages/images --db ${{ secrets.NOTION_DB_ID }} --key ${{ secrets.NOTION_API_KEY }} --hugo
+        run: python notion-md/script.py --static static/images --content content/posts --url /notion-ghpages/images --db "${{ secrets.NOTION_DB_ID }}" --key "${{ secrets.NOTION_API_KEY }}" --hugo
 
       - name: Setup Hugo
         uses: peaceiris/actions-hugo@v2
@@ -30,13 +51,23 @@ jobs:
           hugo-version: 'latest'
           extended: true
 
-      - name: Build
-        run: hugo
+      - name: Install/Update Hugo modules (if using modules)
+        run: hugo mod get -u || echo "No Hugo modules to update"
 
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Build Hugo site
+        run: hugo --minify
+      
+      - name: Create CNAME file
+        run: echo "www.renewszero.com" > CNAME
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-          publish_branch: gh-pages
-          publish_dir: ./public
-          force_orphan: true
+          path: ./public
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
