@@ -2,7 +2,8 @@ baseURL: "https://malsius.github.io/notion-ghpages"
 title: Blog template
 theme: PaperMod
 
-paginate: 5
+pagination:
+  pagerSize: 5
 enableInlineShortcodes: true
 enableRobotsTXT: true
 enableEmoji: true
